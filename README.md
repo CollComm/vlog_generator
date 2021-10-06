@@ -1,2 +1,2 @@
-# vlog_generator
-This repo demonstrates how to create vlogs using only your diary.
+# Vlog Generator
+This repo demonstrates how to create vlogs using only your text-based diary.
