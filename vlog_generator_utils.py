@@ -17,10 +17,14 @@ def match_line_content_with_duration(content):
 
 def filter_special_symbols(content):
     new_content = ''
+    pre_letter = ''
     for letter in content:
         if letter == '>':
             continue
         elif letter == '-':
+            # keep the formula usage like xxx-yyy
+            if pre_letter != '':
+                new_content += letter
             continue
         elif letter == '#':
             continue
@@ -29,6 +33,7 @@ def filter_special_symbols(content):
             continue
         else:
             new_content += letter
+        pre_letter = letter
     return new_content
 
 
@@ -46,8 +51,6 @@ def add_text_clips(text, start, duration):
                                '你未来想做什么？']
     if text.strip() not in black_screen_white_font:
         txt_clip = (TextClip(text,
-                             method='caption',
-                             size=[1800, None],
                              font='Alibaba-PuHuiTi-2-55-Regular',
                              fontsize=150,  # 100 is too small for people
                              color='white')  # print_cmd=True is useful for debugging
