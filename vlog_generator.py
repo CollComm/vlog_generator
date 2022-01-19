@@ -60,63 +60,76 @@ for annotation_file_path in annotation_library:
     # annotation_start_time = 2
     annotation_start_time = intro_video.duration
     for line_number in range(len(annotation_content)):
-        if line_number < 7:
-            continue
         # load the video clips responsible for producing the final result
-        annotation_duration = vlog_generator_utils.match_line_content_with_duration(annotation_content[line_number])
-        text_to_render = vlog_generator_utils.filter_special_symbols(annotation_content[line_number])
-        # do not render empty lines
-        if text_to_render.strip() == "":
-            continue
-        random_number = random.randint(0, len(video_clip_library_filepath))
-        if random_number in video_clip_library_progress:
-            random_video_file_clip = video_clip_library_objects[random_number]
-        else:
-            random_video_filepath = video_clip_library_filepath[random_number]
-            random_video_file_clip = VideoFileClip(random_video_filepath)
-            video_clip_library_objects[random_number] = random_video_file_clip
+        if line_number >= 7:
+            annotation_duration = vlog_generator_utils.match_line_content_with_duration(annotation_content[line_number])
+            text_to_render = vlog_generator_utils.filter_special_symbols(annotation_content[line_number])
+            # do not render empty lines
+            if text_to_render.strip() == "":
+                continue
+            random_number = random.randint(0, len(video_clip_library_filepath))
+            if random_number in video_clip_library_progress:
+                random_video_file_clip = video_clip_library_objects[random_number]
+            else:
+                random_video_filepath = video_clip_library_filepath[random_number]
+                random_video_file_clip = VideoFileClip(random_video_filepath)
+                video_clip_library_objects[random_number] = random_video_file_clip
 
-        # load the music clips responsible for producing the final result
-        random_number_for_music = random.randint(0, len(music_clip_library_filepath))
-        if random_number_for_music in music_clip_library_objects:
-            random_music_file_clip = music_clip_library_objects[random_number_for_music]
-        else:
-            random_music_filepath = music_clip_library_filepath[random_number_for_music]
-            random_music_file_clip = AudioFileClip(random_music_filepath)
-            music_clip_library_objects[random_number] = random_music_file_clip
+            # load the music clips responsible for producing the final result
+            random_number_for_music = random.randint(0, len(music_clip_library_filepath))
+            if random_number_for_music in music_clip_library_objects:
+                random_music_file_clip = music_clip_library_objects[random_number_for_music]
+            else:
+                random_music_filepath = music_clip_library_filepath[random_number_for_music]
+                random_music_file_clip = AudioFileClip(random_music_filepath)
+                music_clip_library_objects[random_number] = random_music_file_clip
 
-        # control the progress of the video play
-        video_play_starting_point = 0
-        if random_number in video_clip_library_progress:
-            video_play_starting_point = video_clip_library_progress[random_number]
-            # the last part might never show but it's okay
-        if video_play_starting_point + annotation_duration > random_video_file_clip.duration:
+            # control the progress of the video play
             video_play_starting_point = 0
+            if random_number in video_clip_library_progress:
+                video_play_starting_point = video_clip_library_progress[random_number]
+                # the last part might never show but it's okay
+            if video_play_starting_point + annotation_duration > random_video_file_clip.duration:
+                video_play_starting_point = 0
 
-        # control the progress of the audio play
-        music_play_starting_point = 0
-        if random_number_for_music in music_clip_library_progress:
-            music_play_starting_point = music_clip_library_progress[random_number_for_music]
-        if music_play_starting_point + annotation_duration > random_music_file_clip.duration:
+            # control the progress of the audio play
             music_play_starting_point = 0
+            if random_number_for_music in music_clip_library_progress:
+                music_play_starting_point = music_clip_library_progress[random_number_for_music]
+            if music_play_starting_point + annotation_duration > random_music_file_clip.duration:
+                music_play_starting_point = 0
 
-        # control the video editing and produce the final result
-        # sub clip is using the absolute time rather than delta time
-        # (t_start, t_end), and not (t_start, duration)
-        random_video_to_merge = (random_video_file_clip
-                                 .subclip(video_play_starting_point, video_play_starting_point + annotation_duration)
-                                 .set_start(annotation_start_time))
-        random_music_to_merge = (random_music_file_clip
-                                 .subclip(music_play_starting_point, music_play_starting_point + annotation_duration)
-                                 .set_start(annotation_start_time))
-        annotation_music_clips.append(random_music_to_merge)
-        annotation_video_clips.append(random_video_to_merge)
-        annotation_video_clips.append(
-            vlog_generator_utils.add_text_clips(
-                text_to_render, annotation_start_time, annotation_duration))
-        video_clip_library_progress[random_number] = video_play_starting_point + annotation_duration
-        music_clip_library_progress[random_number_for_music] = music_play_starting_point + annotation_duration
-        annotation_start_time += annotation_duration
+            # control the video editing and produce the final result
+            # sub clip is using the absolute time rather than delta time
+            # (t_start, t_end), and not (t_start, duration)
+            random_video_to_merge = (random_video_file_clip
+                                     .subclip(video_play_starting_point, video_play_starting_point + annotation_duration)
+                                     .set_start(annotation_start_time))
+            random_music_to_merge = (random_music_file_clip
+                                     .subclip(music_play_starting_point, music_play_starting_point + annotation_duration)
+                                     .set_start(annotation_start_time))
+
+            # control the position to show the text
+            # ('centre', 'centre')
+            # random.random, range [0, 1)
+            position = (random.random(), random.random(), [0.0, 1])
+            # random_video_to_merge.fx(vfx.freeze_region, annotation_start_time,
+            #                          region=((position[0] * random_video_to_merge.size[0]),
+            #                                  (position[1] * random_video_to_merge.size[1]),
+            #                                  (position[0] * random_video_to_merge.size[0] + 150),
+            #                                  (position[1] * random_video_to_merge.size[1] + 150)))
+
+            annotation_music_clips.append(random_music_to_merge)
+            annotation_video_clips.append(random_video_to_merge)
+            annotation_video_clips.append(
+                vlog_generator_utils.add_text_clips(
+                    text_to_render,
+                    annotation_start_time,
+                    annotation_duration,
+                    position))
+            video_clip_library_progress[random_number] = video_play_starting_point + annotation_duration
+            music_clip_library_progress[random_number_for_music] = music_play_starting_point + annotation_duration
+            annotation_start_time += annotation_duration
     annotation_file.close()
 
     result = CompositeVideoClip(annotation_video_clips)  # Overlay text on video

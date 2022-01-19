@@ -1,4 +1,5 @@
 from moviepy.editor import *
+from numpy import interp
 
 
 def match_line_content_with_duration(content):
@@ -23,7 +24,7 @@ def filter_special_symbols(content):
             continue
         elif letter == '-':
             # keep the formula usage like xxx-yyy
-            if pre_letter != '':
+            if pre_letter != '' and pre_letter != ' ':
                 new_content += letter
             continue
         elif letter == '#':
@@ -37,7 +38,7 @@ def filter_special_symbols(content):
     return new_content
 
 
-def add_text_clips(text, start, duration):
+def add_text_clips(text, start, duration, position):
     black_screen_white_font = ['你今天吃的什么？',
                                '你今天怎么锻炼身体的？',
                                '你今天睡眠怎么样？',
@@ -49,12 +50,17 @@ def add_text_clips(text, start, duration):
                                '你最感激的十件事情是什么？',
                                '你今天做了多少次拒绝与否的决策？',
                                '你未来想做什么？']
+    # Assume position is in the (x, y, range)
+    # remap to a more readable form
+    position_x = interp(position[0], position[2], [0.2, 0.3])
+    position_y = interp(position[1], position[2], [0.2, 0.8])
+    adjusted_position = (position_x, position_y)
     if text.strip() not in black_screen_white_font:
         txt_clip = (TextClip(text,
                              font='Alibaba-PuHuiTi-2-55-Regular',
-                             fontsize=150,  # 100 is too small for people
+                             fontsize=125,  # 100 is too small for people
                              color='white')  # print_cmd=True is useful for debugging
-                    .set_position(("center", 0.8), relative=True)
+                    .set_position(adjusted_position, relative=True)
                     .set_duration(duration)
                     .set_start(start))
     else:
@@ -86,6 +92,8 @@ def prepare_data_libraries(source_video_folder_path,
     annotation_library = []
     for root, dirs, files in os.walk(annotation_folder_path):
         for file in files:
+            if isinstance(file, str) and file.startswith('.'):
+                continue
             related_source_video_file_name = get_related_video_file_name(source_video_folder_path, file)
             related_final_video_file_name = get_related_video_file_name(final_video_folder_path, file)
             if ((related_source_video_file_name in intro_video_library)
