@@ -3,6 +3,7 @@ from datetime import datetime
 from moviepy.editor import *
 from moviepy.config_defaults import *
 from numpy import random
+from pathlib import Path
 
 import vlog_generator_utils
 
@@ -11,11 +12,12 @@ start_time = datetime.now()
 print("Creation Start Time:", start_time.strftime("%H:%M:%S"))
 # Record this part yourself daily
 # intro_video = VideoFileClip("SourceVideos/2021-07-29.mp4")
-source_video_folder_path = 'SourceVideos'
-final_video_folder_path = 'FinalVideos'
+source_video_folder_path = Path('SourceVideos')
+final_video_folder_path = Path('FinalVideos')
 # Put your subtitle file in this folder
-annotation_folder_path = 'SourceSubtitles'
-source_music_folder_path = 'SourceMusic'
+annotation_folder_path = Path('SourceSubtitles')
+source_music_folder_path = Path('SourceMusic')
+source_mixers = Path('Mixers')
 
 annotation_library = (
     vlog_generator_utils.prepare_data_libraries(
@@ -27,17 +29,17 @@ annotation_library = (
 video_clip_library_filepath = []
 video_clip_library_progress = {}
 video_clip_library_objects = {}
-for root, dirs, files in os.walk('Mixers'):
-    for file in files:
-        video_clip_library_filepath.append('Mixers/' + file)
+for file_path in source_mixers.iterdir():
+    if file_path.is_file():
+        video_clip_library_filepath.append(file_path)
 
 # Add music on top of the existing videos
 music_clip_library_filepath = []
 music_clip_library_progress = {}
 music_clip_library_objects = {}
-for root, dirs, files in os.walk('SourceMusic'):
-    for file in files:
-        music_clip_library_filepath.append('SourceMusic/' + file)
+for file_path in source_music_folder_path.iterdir():
+    if file_path.is_file():
+        music_clip_library_filepath.append(file_path)
 
 # Load annotations and re-start the video content
 # Make the text. Many more options are available.
@@ -45,15 +47,17 @@ for root, dirs, files in os.walk('SourceMusic'):
 #             .set_position(("center", 0.8), relative=True)
 #             .set_duration(3) )
 for annotation_file_path in annotation_library:
-    intro_video = VideoFileClip(
-        vlog_generator_utils.get_related_video_file_name(
-            source_video_folder_path, annotation_file_path))
-    intro_audio = AudioFileClip(
-        vlog_generator_utils.get_related_video_file_name(
-            source_video_folder_path, annotation_file_path))
+    source_video_file_path = source_video_folder_path / vlog_generator_utils.get_related_video_file_name(
+            source_video_folder_path, annotation_file_path)
+    intro_video = VideoFileClip(str(source_video_file_path))
+    # Use the audio from the video file as the start
+    intro_audio = AudioFileClip(str(source_video_file_path))
     # annotation_file = open("2021 07 29 e7edf559b06442b8bdb6e9067a671d61.md", "r")
-    annotation_file = open(annotation_file_path, "r")
+    annotation_file = open(annotation_file_path, 'r', encoding='utf8')
     annotation_content = annotation_file.readlines()
+    # For debugging
+    # print(annotation_content)
+    # continue
     # annotation_video_clips = [intro_video.subclip(0, 2)]
     annotation_video_clips = [intro_video]
     annotation_music_clips = [intro_audio]
@@ -72,7 +76,7 @@ for annotation_file_path in annotation_library:
                 random_video_file_clip = video_clip_library_objects[random_number]
             else:
                 random_video_filepath = video_clip_library_filepath[random_number]
-                random_video_file_clip = VideoFileClip(random_video_filepath)
+                random_video_file_clip = VideoFileClip(str(random_video_filepath))
                 video_clip_library_objects[random_number] = random_video_file_clip
 
             # load the music clips responsible for producing the final result
@@ -81,7 +85,7 @@ for annotation_file_path in annotation_library:
                 random_music_file_clip = music_clip_library_objects[random_number_for_music]
             else:
                 random_music_filepath = music_clip_library_filepath[random_number_for_music]
-                random_music_file_clip = AudioFileClip(random_music_filepath)
+                random_music_file_clip = AudioFileClip(str(random_music_filepath))
                 music_clip_library_objects[random_number] = random_music_file_clip
 
             # control the progress of the video play
@@ -137,7 +141,8 @@ for annotation_file_path in annotation_library:
     result.audio = resultMusic
     # result.write_videofile("vtest_captioned.mp4", codec='libx264', audio=True, audio_codec='aac')  # Many options...
     result.write_videofile(
-        vlog_generator_utils.get_related_video_file_name(final_video_folder_path, annotation_file_path),
+        final_video_folder_path / vlog_generator_utils.get_related_video_file_name(final_video_folder_path,
+                                                                                   annotation_file_path),
         codec='libx264',
         audio=True,
         audio_codec='aac')

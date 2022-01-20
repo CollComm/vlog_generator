@@ -3,3 +3,10 @@
 *.mp3
 *.wav
 .idea/
+*.zip
+SourceSubtitles/
+Mixers/
+FinalVideos/
+SourceMusic/
+SourceVideos/
+__pycache__/

@@ -1,5 +1,8 @@
 from moviepy.editor import *
 from numpy import interp
+from zipfile import ZipFile
+from pathlib import Path
+import re
 
 
 def match_line_content_with_duration(content):
@@ -77,46 +80,56 @@ def add_text_clips(text, start, duration, position):
 def prepare_data_libraries(source_video_folder_path,
                            final_video_folder_path,
                            annotation_folder_path):
+    assert isinstance(source_video_folder_path, Path)
+    assert isinstance(final_video_folder_path, Path)
+    assert isinstance(annotation_folder_path, Path)
+
     intro_video_library = []
-    for root, dirs, files in os.walk(source_video_folder_path):
-        for file in files:
-            intro_video_library.append('{}/{}'.format(source_video_folder_path, file))
+    for file_path in source_video_folder_path.iterdir():
+        intro_video_library.append(file_path.name)
 
     final_video_library = []
-    for root, dirs, files in os.walk(final_video_folder_path):
-        for file in files:
-            final_video_library.append('{}/{}'.format(final_video_folder_path, file))
+    for file_path in final_video_folder_path.iterdir():
+        final_video_library.append(file_path.name)
 
     # We only process videos with subtitles
     # We no longer process existing videos
     annotation_library = []
-    for root, dirs, files in os.walk(annotation_folder_path):
-        for file in files:
-            if isinstance(file, str) and file.startswith('.'):
-                continue
-            related_source_video_file_name = get_related_video_file_name(source_video_folder_path, file)
-            related_final_video_file_name = get_related_video_file_name(final_video_folder_path, file)
+    annotation_xplat_path = Path(annotation_folder_path)
+    unzip_annotation_file(annotation_xplat_path / 'zip', annotation_xplat_path / 'MD')
+    for file_path in (annotation_xplat_path / 'MD').iterdir():
+        if file_path.is_file():
+            related_source_video_file_name = get_related_video_file_name(source_video_folder_path, file_path)
+            related_final_video_file_name = get_related_video_file_name(final_video_folder_path, file_path)
             if ((related_source_video_file_name in intro_video_library)
                     and (related_final_video_file_name not in final_video_library)):
-                annotation_library.append('{}/{}'.format(annotation_folder_path, file))
+                annotation_library.append(file_path)
 
     return annotation_library
 
 
-def get_related_video_file_name(source_video_folder_path, annotation_file):
+def unzip_annotation_file(annotation_folder_zip_path, annotation_folder_md_path):
+    """
+    We support zipped file that are stored in zip format.
+    """
+    for file_path in annotation_folder_zip_path.iterdir():
+        if not file_path.stem:
+            continue
+        if file_path.suffix == '.zip':
+            with ZipFile(file_path, 'r') as zip_ref:
+                zip_ref.extractall(annotation_folder_md_path)
+
+
+def get_related_video_file_name(source_video_folder_path, annotation_file_path):
     """
       we expect the annotation to be in SourceSubtitles/2021 07 29 XYZ.md
       or in the form of 2021 07 29 XYZ.md
     """
-    if isinstance(annotation_file, str):
-        folder_position = annotation_file.find('/')
-        if folder_position != -1:
-            parts = annotation_file.split('/')[1].split()
-        else:
-            parts = annotation_file.split()
-        if len(parts) < 4:
-            raise (Exception(
-                'Annotation file {} with {} is in the wrong format.'.format(
-                    annotation_file, source_video_folder_path)))
-        return '{}/{}-{}-{}.mp4'.format(source_video_folder_path, parts[0], parts[1], parts[2])
-
+    pattern = re.compile(r'.*?(\d+) (\d+) (\d+) .*')
+    match = pattern.match(annotation_file_path.name)
+    if not match:
+        raise (Exception(
+            'Annotation file {} with {} is in the wrong format.'.format(
+                annotation_file_path, source_video_folder_path)))
+    video_file_path = source_video_folder_path / '{}-{}-{}.mp4'.format(match.group(1), match.group(2), match.group(3))
+    return video_file_path.name
