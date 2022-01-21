@@ -48,7 +48,7 @@ for file_path in source_music_folder_path.iterdir():
 #             .set_duration(3) )
 for annotation_file_path in annotation_library:
     source_video_file_path = source_video_folder_path / vlog_generator_utils.get_related_video_file_name(
-            source_video_folder_path, annotation_file_path)
+        source_video_folder_path, annotation_file_path)
     intro_video = VideoFileClip(str(source_video_file_path))
     # Use the audio from the video file as the start
     intro_audio = AudioFileClip(str(source_video_file_path))
@@ -107,10 +107,12 @@ for annotation_file_path in annotation_library:
             # sub clip is using the absolute time rather than delta time
             # (t_start, t_end), and not (t_start, duration)
             random_video_to_merge = (random_video_file_clip
-                                     .subclip(video_play_starting_point, video_play_starting_point + annotation_duration)
+                                     .subclip(video_play_starting_point,
+                                              video_play_starting_point + annotation_duration)
                                      .set_start(annotation_start_time))
             random_music_to_merge = (random_music_file_clip
-                                     .subclip(music_play_starting_point, music_play_starting_point + annotation_duration)
+                                     .subclip(music_play_starting_point,
+                                              music_play_starting_point + annotation_duration)
                                      .set_start(annotation_start_time))
 
             # control the position to show the text
@@ -141,8 +143,8 @@ for annotation_file_path in annotation_library:
     result.audio = resultMusic
     # result.write_videofile("vtest_captioned.mp4", codec='libx264', audio=True, audio_codec='aac')  # Many options...
     result.write_videofile(
-        final_video_folder_path / vlog_generator_utils.get_related_video_file_name(final_video_folder_path,
-                                                                                   annotation_file_path),
+        str(final_video_folder_path / vlog_generator_utils.get_related_video_file_name(final_video_folder_path,
+                                                                                       annotation_file_path)),
         codec='libx264',
         audio=True,
         audio_codec='aac')
@@ -152,5 +154,3 @@ for annotation_file_path in annotation_library:
     print('Creation End Time: {0}, Process took {1} in total'.format(
         end_time.strftime("%H:%M:%S"), (end_time - start_time)))
     start_time = end_time
-
-
