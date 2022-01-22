@@ -7,6 +7,9 @@
 SourceSubtitles/
 Mixers/
 FinalVideos/
+FrontPages/
 SourceMusic/
 SourceVideos/
 __pycache__/
+..gitignore.un~
+.gitignore~
