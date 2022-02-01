@@ -58,7 +58,12 @@ def add_text_clips(text, start, duration, position):
     position_x = interp(position[0], position[2], [0.2, 0.3])
     position_y = interp(position[1], position[2], [0.2, 0.8])
     adjusted_position = (position_x, position_y)
-    if text.strip() not in black_screen_white_font:
+    # remove extra spacing from the text
+    text = str(text).strip()
+    if text not in black_screen_white_font:
+        if len(text) > 10:
+            # insert one line break， ImageMagicK method label necessary
+            text = text[:10] + '\n' + text[10:]
         txt_clip = (TextClip(text,
                              font='Alibaba-PuHuiTi-2-55-Regular',
                              fontsize=125,  # 100 is too small for people
